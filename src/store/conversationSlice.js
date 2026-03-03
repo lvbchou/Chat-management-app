@@ -169,7 +169,7 @@ const conversationSlice = createSlice({
       );
     },
 
-    /* ✅ LOCAL DELETE */
+    // local delete
     removeConversation(state, action) {
       const id = String(action.payload);
       state.items = state.items.filter((c) => String(c.id) !== id);
