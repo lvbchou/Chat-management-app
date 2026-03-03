@@ -1,9 +1,9 @@
 import { axiosClient } from "./axiosClient";
 
 export const authApi = {
-  // Nếu bạn có API thật thì sửa endpoint tại đây
+  // have API -> create endpoint
   async login({ username, password }) {
-    // thử call API thật
+    // try auth API
     try {
       if (axiosClient.defaults.baseURL) {
         return await axiosClient.post("/login", { username, password });

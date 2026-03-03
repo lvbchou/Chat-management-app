@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const axiosClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "", // nếu bạn có API REST
+  baseURL: import.meta.env.VITE_API_BASE_URL || "", // if have API REST
   timeout: 30000,
 });
 
