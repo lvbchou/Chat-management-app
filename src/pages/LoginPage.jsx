@@ -22,7 +22,7 @@ export default function LoginPage() {
           <Form.Item
             label="Username"
             name="username"
-            rules={[{ required: true, message: "Vui lòng nhập username" }]}
+            rules={[{ required: true, message: "Enter username, please!" }]}
           >
             <Input placeholder="Username" />
           </Form.Item>
@@ -30,7 +30,7 @@ export default function LoginPage() {
           <Form.Item
             label="Password"
             name="password"
-            rules={[{ required: true, message: "Vui lòng nhập password" }]}
+            rules={[{ required: true, message: "Enter password, please!" }]}
           >
             <Input.Password placeholder="Password" />
           </Form.Item>

@@ -114,7 +114,7 @@ export default function ConversationsPage() {
                 >
                   <div className="font-bold">{c.name}</div>
                   <div className="text-xs opacity-70">
-                    Cập nhật: {c.lastBotReplyAt || "-"}
+                    Update: {c.lastBotReplyAt || "-"}
                   </div>
                 </div>
               ))}
