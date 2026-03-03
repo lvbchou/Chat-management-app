@@ -1,0 +1,136 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Pink Glassmorphism */
+:root {
+  --pink-50: #fff1f6;
+  --pink-100: #ffe4f0;
+  --pink-200: #ffd1e3;
+  --pink-300: #ffb3cf;
+  --pink-400: #ff7aa8;
+  --pink-500: #ff4d87;
+  --pink-600: #f12b73;
+
+  --text: #111827;
+  --subtext: rgba(17, 24, 39, 0.62);
+
+  --stroke: rgba(255, 105, 180, 0.22);
+  --glass: rgba(255, 255, 255, 0.55);
+  --glass-strong: rgba(255, 255, 255, 0.72);
+
+  --shadow: 0 12px 40px rgba(255, 105, 180, 0.14);
+  --shadow-soft: 0 10px 30px rgba(31, 41, 55, 0.08);
+
+  --radius: 16px;
+  --radius-sm: 12px;
+  --blur: 16px;
+
+  --bg: linear-gradient(135deg, #fff1f6 0%, #ffe4f0 35%, #fff7fb 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
+    "Apple Color Emoji", "Segoe UI Emoji";
+  color: var(--text);
+  background: var(--bg);
+}
+
+/* ===== Helpers ===== */
+.pink-bg {
+  background: var(--bg);
+}
+
+.glass {
+  background: var(--glass);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+}
+
+.glass-strong {
+  background: var(--glass-strong);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+}
+
+.pink-gradient-btn {
+  background: linear-gradient(135deg, var(--pink-500), var(--pink-400)) !important;
+  border: none !important;
+  box-shadow: 0 10px 22px rgba(255, 77, 135, 0.22) !important;
+}
+
+.pink-outline-btn {
+  background: rgba(255, 255, 255, 0.55) !important;
+  border: 1px solid var(--stroke) !important;
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+}
+
+.pink-input {
+  background: rgba(255, 255, 255, 0.75) !important;
+  border: 1px solid var(--stroke) !important;
+  border-radius: 14px !important;
+}
+
+.ant-btn-primary {
+  background: linear-gradient(135deg, var(--pink-500), var(--pink-400)) !important;
+  border: none !important;
+  box-shadow: 0 10px 22px rgba(255, 77, 135, 0.22) !important;
+}
+
+.ant-btn-primary:hover {
+  filter: brightness(1.02);
+}
+
+.ant-input,
+.ant-input-affix-wrapper {
+  border-radius: 14px !important;
+  border-color: var(--stroke) !important;
+  background: rgba(255, 255, 255, 0.75) !important;
+}
+
+.ant-input-affix-wrapper-focused,
+.ant-input-focused,
+.ant-input:focus {
+  box-shadow: 0 0 0 4px rgba(255, 77, 135, 0.12) !important;
+}
+
+.ant-modal-content {
+  border-radius: 18px !important;
+  border: 1px solid var(--stroke) !important;
+  background: rgba(255, 255, 255, 0.78) !important;
+  box-shadow: var(--shadow) !important;
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+}
+
+.ant-modal-header {
+  background: transparent !important;
+  border-bottom: 1px solid var(--stroke) !important;
+}
+
+.ant-card {
+  border-radius: 18px !important;
+  border: 1px solid var(--stroke) !important;
+  background: rgba(255, 255, 255, 0.70) !important;
+  box-shadow: var(--shadow-soft) !important;
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+}
