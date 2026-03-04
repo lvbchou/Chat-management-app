@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Layout, Button, Input, Spin, Empty, Modal, Form } from "antd";
-import { useNavigate, useParams } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
+import {useEffect, useMemo, useRef, useState} from "react";
+import {Layout, Button, Input, Spin, Empty, Modal, Form} from "antd";
+import {useNavigate, useParams} from "react-router-dom";
+import {useDispatch, useSelector} from "react-redux";
 
 import AppHeader from "../components/AppHeader";
 import ConversationFormModal from "../components/ConversationFormModal";
 import MessageList from "../components/MessageList";
 
-import { useSocket } from "../socket/useSocket";
-import { selectMyInfo } from "../store/authSlice";
+import {useSocket} from "../socket/useSocket";
+// import {selectMyInfo} from "../store/authSlice";
 
 import {
   fetchConversations,
@@ -22,18 +22,19 @@ import {
   updateConversationName, removeConversation, //conversationSlice
 } from "../store/conversationSlice";
 
-import { appendMessage, selectMessagesByConvId } from "../store/messageSlice";
+import {appendMessage, selectMessagesByConvId} from "../store/messageSlice";
+import {io} from "socket.io-client";
 
-const { Sider, Content } = Layout;
+const {Sider, Content} = Layout;
 
 export default function ConversationDetailPage() {
-  const { id } = useParams();
+  const {id} = useParams();
   const activeId = String(id);
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const myInfo = useSelector(selectMyInfo);
+  // const myInfo = useSelector(selectMyInfo);
   const conversations = useSelector(selectConversations);
   const loading = useSelector(selectConversationsLoading);
   const query = useSelector(selectConversationQuery);
@@ -61,10 +62,13 @@ export default function ConversationDetailPage() {
   const fallbackTimerRef = useRef(null);
   const lastUserTextRef = useRef("");
 
-  const { sendToBot, onBotMessage } = useSocket();
+  const socketRef = useRef(null);
+  const listenersRef = useRef(new Set());
+
+  const {onBotMessage} = useSocket();
 
   const nowTimeLabel = () =>
-    new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    new Date().toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
   const nowMs = () => Date.now();
 
   const activeConv = useMemo(
@@ -127,9 +131,32 @@ export default function ConversationDetailPage() {
     boxShadow: "0 10px 22px rgba(255, 77, 135, 0.22)",
   };
 
+  useEffect(() => {
+    const s = io("https://owlee-dev.thinklabs.com.vn", {
+      path: "/socket.io/socket.io",
+      transports: ["websocket"],
+      query: {verify: false},
+    });
+
+    socketRef.current = s;
+
+    s.on("chatbot_message", (data) => {
+      // chỉ lấy bot trả lời hợp lệ
+      if (data?.sender === "bot" && data?.type !== "follow_up_question") {
+        listenersRef.current.forEach((cb) => cb(data));
+      }
+    });
+
+    return () => {
+      s.removeAllListeners();
+      s.disconnect();
+      socketRef.current = null;
+    };
+  }, [id]);
+
   // load list
   useEffect(() => {
-    dispatch(fetchConversations({ page: 1, limit: 50 }));
+    dispatch(fetchConversations({page: 1, limit: 50}));
   }, [dispatch]);
 
   // when switching conversation
@@ -163,11 +190,11 @@ export default function ConversationDetailPage() {
       dispatch(
         appendMessage({
           convId: activeId,
-          message: { id: crypto.randomUUID(), from: "bot", text: finalText, time: tLabel },
+          message: {id: crypto.randomUUID(), from: "bot", text: finalText, time: tLabel},
         })
       );
 
-      dispatch(updateLastBotReply({ convId: activeId, lastBotReplyAt: tLabel, lastBotReplyAtMs: tMs }));
+      dispatch(updateLastBotReply({convId: activeId, lastBotReplyAt: tLabel, lastBotReplyAtMs: tMs}));
     });
 
     return () => off?.();
@@ -175,7 +202,7 @@ export default function ConversationDetailPage() {
 
   // auto scroll
   useEffect(() => {
-    chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: "smooth" });
+    chatRef.current?.scrollTo({top: chatRef.current.scrollHeight, behavior: "smooth"});
   }, [messages, botTyping]);
 
   const handleSend = () => {
@@ -188,7 +215,7 @@ export default function ConversationDetailPage() {
     dispatch(
       appendMessage({
         convId: activeId,
-        message: { id: crypto.randomUUID(), from: "user", text: content, time: tLabel },
+        message: {id: crypto.randomUUID(), from: "user", text: content, time: tLabel},
       })
     );
 
@@ -213,18 +240,28 @@ export default function ConversationDetailPage() {
         })
       );
 
-      dispatch(updateLastBotReply({ convId: activeId, lastBotReplyAt: fbLabel, lastBotReplyAtMs: fbMs }));
+      dispatch(updateLastBotReply({convId: activeId, lastBotReplyAt: fbLabel, lastBotReplyAtMs: fbMs}));
       fallbackTimerRef.current = null;
     }, 4000);
 
-    sendToBot(content, myInfo?.name || myInfo?.username || "Vu");
+    const data = {
+      type: "question",
+      is_conversation_exists: false,
+      conversation_id: "",
+      text: content || "",
+      is_iframe: true,
+      chatbot_id: "6862181f7b95c3f0edb79f9a",
+      user_info_iframe: {user_name: 'Vu'},
+    };
+    socketRef.current?.emit("chatbot_message", data);
+    // sendToBot(content, myInfo?.name || myInfo?.username || "Vu");
     setText("");
   };
 
-  const handleCreate = async ({ name }) => {
+  const handleCreate = async ({name}) => {
     setCreating(true);
     try {
-      const action = await dispatch(createConversation({ name }));
+      const action = await dispatch(createConversation({name}));
 
       if (createConversation.fulfilled.match(action)) {
         setCreateOpen(false);
@@ -254,7 +291,7 @@ export default function ConversationDetailPage() {
     setRenameTarget(conv);
     setRenameOpen(true);
     // set default value
-    renameForm.setFieldsValue({ name: conv?.name || "" });
+    renameForm.setFieldsValue({name: conv?.name || ""});
   };
 
   // Submit rename
@@ -265,7 +302,7 @@ export default function ConversationDetailPage() {
       if (!renameTarget?.id) return;
 
       setRenaming(true);
-      dispatch(updateConversationName({ id: renameTarget.id, name: newName }));
+      dispatch(updateConversationName({id: renameTarget.id, name: newName}));
 
       setRenameOpen(false);
       setRenameTarget(null);
@@ -327,11 +364,11 @@ export default function ConversationDetailPage() {
   }, []);
 
   return (
-    <Layout style={{ minHeight: "100vh", background: theme.bg }}>
-      <AppHeader />
+    <Layout style={{minHeight: "100vh", background: theme.bg}}>
+      <AppHeader/>
 
-      <Layout style={{ background: "transparent", padding: OUTER_PADDING, gap: GAP }}>
-        <Sider width={320} style={{ background: "transparent", padding: 0 }}>
+      <Layout style={{background: "transparent", padding: OUTER_PADDING, gap: GAP}}>
+        <Sider width={320} style={{background: "transparent", padding: 0}}>
           <div
             style={{
               ...glassPanelStyle,
@@ -344,7 +381,7 @@ export default function ConversationDetailPage() {
               type="primary"
               block
               onClick={() => setCreateOpen(true)}
-              style={{ ...primaryBtnStyle, marginBottom: 12 }}
+              style={{...primaryBtnStyle, marginBottom: 12}}
             >
               + New chat
             </Button>
@@ -360,17 +397,17 @@ export default function ConversationDetailPage() {
                 border: `1px solid ${theme.stroke}`,
                 background: "rgba(255,255,255,0.65)",
               }}
-              suffix={<span style={{ opacity: 0.55 }}>🔍</span>}
+              suffix={<span style={{opacity: 0.55}}>🔍</span>}
               allowClear
             />
 
             {loading ? (
-              <div style={{ paddingTop: 18, textAlign: "center" }}>
-                <Spin />
+              <div style={{paddingTop: 18, textAlign: "center"}}>
+                <Spin/>
               </div>
             ) : filteredConversations.length === 0 ? (
-              <div style={{ padding: 12 }}>
-                <Empty description="No conversation" />
+              <div style={{padding: 12}}>
+                <Empty description="No conversation"/>
               </div>
             ) : (
               <div
@@ -382,14 +419,14 @@ export default function ConversationDetailPage() {
                   scrollbarGutter: "stable",
                 }}
               >
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{display: "flex", flexDirection: "column", gap: 10}}>
                   {filteredConversations.map((c) => {
                     const active = String(c.id) === activeId;
 
                     return (
                       <div
                         key={c.id}
-                        style={{ position: "relative" }}
+                        style={{position: "relative"}}
                         onClick={() => navigate(`/conversations/${c.id}`)}
                         onMouseEnter={(e) => {
                           const el = e.currentTarget.querySelector(".conv-actions");
@@ -482,7 +519,7 @@ export default function ConversationDetailPage() {
                             </div>
                           </div>
 
-                          <div style={{ fontSize: 12, color: theme.subText, marginTop: 2 }}>
+                          <div style={{fontSize: 12, color: theme.subText, marginTop: 2}}>
                             Updated: {c.lastBotReplyAt || "-"}
                           </div>
                         </div>
@@ -495,8 +532,8 @@ export default function ConversationDetailPage() {
           </div>
         </Sider>
 
-        <Content style={{ background: "transparent" }}>
-          <div style={{ ...glassPanelStrongStyle, overflow: "hidden" }}>
+        <Content style={{background: "transparent"}}>
+          <div style={{...glassPanelStrongStyle, overflow: "hidden"}}>
             <div
               style={{
                 padding: "14px 16px 10px",
@@ -504,7 +541,7 @@ export default function ConversationDetailPage() {
                 background: "linear-gradient(135deg, rgba(255,255,255,0.75), rgba(255,240,248,0.55))",
               }}
             >
-              <div style={{ fontWeight: 900, fontSize: 16, color: theme.text }}>{titleName}</div>
+              <div style={{fontWeight: 900, fontSize: 16, color: theme.text}}>{titleName}</div>
             </div>
 
             <div
@@ -519,7 +556,7 @@ export default function ConversationDetailPage() {
                 WebkitBackdropFilter: `blur(${theme.blur}px)`,
               }}
             >
-              <MessageList messages={messages} botTyping={botTyping} />
+              <MessageList messages={messages} botTyping={botTyping}/>
             </div>
 
             <div
@@ -548,7 +585,7 @@ export default function ConversationDetailPage() {
               <Button
                 type="primary"
                 onClick={handleSend}
-                style={{ ...primaryBtnStyle, height: 46, width: 120 }}
+                style={{...primaryBtnStyle, height: 46, width: 120}}
                 loading={botTyping}
               >
                 Send
@@ -582,11 +619,11 @@ export default function ConversationDetailPage() {
             label="Conversation name"
             name="name"
             rules={[
-              { required: true, message: "Please enter conversation name" },
-              { whitespace: true, message: "Name cannot be empty" },
+              {required: true, message: "Please enter conversation name"},
+              {whitespace: true, message: "Name cannot be empty"},
             ]}
           >
-            <Input placeholder="Type new name..." style={{ height: 44, borderRadius: 12 }} />
+            <Input placeholder="Type new name..." style={{height: 44, borderRadius: 12}}/>
           </Form.Item>
         </Form>
       </Modal>
@@ -603,10 +640,10 @@ export default function ConversationDetailPage() {
         cancelText="Cancel"
         centered
       >
-        <div style={{ lineHeight: 1.6 }}>
+        <div style={{lineHeight: 1.6}}>
           Are you sure you want to delete{" "} ?
           <b>{deleteTarget?.name || "this conversation"}</b>?
-          <div style={{ marginTop: 8, opacity: 0.7 }}>
+          <div style={{marginTop: 8, opacity: 0.7}}>
             This action cannot be undone.
           </div>
         </div>
